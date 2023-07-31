@@ -41,7 +41,7 @@ AirWall_Switch = 'on'
 Roof_Switch = 'off'
 RL_flag = False
 
-epochs = 20
+epochs = 10
 lr = 1e-3
 gamma = 0.9
 epsilon = 0

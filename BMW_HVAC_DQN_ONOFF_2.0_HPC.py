@@ -1118,7 +1118,7 @@ def callback_function_DQN(state_argument):
         # EPLUS.T_map['Thermal Zone 7'] = zone_temp_2007
         EPLUS.T_map['Outdoor Temp'] = oa_temp
 
-        THERMAL_MAP_2D, Zone_Center_XY = ITRC_2.draw_map(EPLUS.T_map)
+        # THERMAL_MAP_2D, Zone_Center_XY = ITRC_2.draw_map(EPLUS.T_map)
         
         
         if EPLUS.RL_flag == True:
@@ -1284,6 +1284,26 @@ def delete_folder(folder_path):
     except Exception as e:
         print(f"An error occurred while deleting folder '{folder_path}': {e}")
 
+
+
+# import pandas as pd
+
+# def output_to_csv(file_path, data):
+#     # Read the CSV file
+#     df = pd.read_csv(file_path, delimiter=';')
+    
+#     # Append the new variables and values to the bottom line
+#     new_row = {
+#         'date': date,
+#         'time': time,
+#         'outdoor temperature': outdoor_temp,
+#         'indoor temperature': indoor_temp,
+#         'setpoint': setpoint
+#     }
+#     df = df.append(new_row, ignore_index=True)
+    
+#     # Save the updated DataFrame back to the CSV file
+#     df.to_csv(file_path, sep=';', index=False)
 
         
 ###############################################################################
