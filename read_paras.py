@@ -18,7 +18,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+# from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 
@@ -30,17 +30,24 @@ def save_parameters_to_txt(parameters, file_path):
     # print(f'Parameters saved to {file_path}')
 
 
-osm_name_box = 'ITRC_2nd_6zone_OPEN.osm'
+EPlus_file = './openstudioapplication-1.4.0/EnergyPlus'
+osm_name_box = './building_model/ITRC_2nd_6zone_OPEN.osm'
+weather_data = './weather_data/USA_SC_Greenville-Spartanburg.Intl.AP.723120_TMY3.epw'
+save_idf = 'run.idf'
+
 timestep_per_hour = 12
 begin_month = 1
 begin_day_of_month =1
 end_month = 12
 end_day_of_month = 31
-save_idf = 'test.idf'
 AirWall_Switch = 'on'
 Roof_Switch = 'off'
 RL_flag = False
 
+    
+state_dim = 15
+action_dim = 2**6
+    
 epochs = 10
 lr = 1e-3
 gamma = 0.9
@@ -53,25 +60,31 @@ batch_size = 128
 FPS = 10000
 signal_loss = False
 signal_factor = 0.1
-T_factor_day = 0.01 *5
+T_factor_day = 0.01 *1
 E_factor_day = 1e-6
 T_factor_night = 0
-E_factor_night = 1e-6 *5
+E_factor_night = 1e-6 *1
 F_bottom = 0
 F_top = 120
 
     
 parameters = {
     'osm_name_box': osm_name_box,
+    'weather_data': weather_data, 
+    'EPlus_file' : EPlus_file,
+    'save_idf' : save_idf,
+
     'timestep_per_hour': timestep_per_hour,
     'begin_month': begin_month,
     'begin_day_of_month': begin_day_of_month,
     'end_month' : end_month,
     'end_day_of_month' : end_day_of_month,
-    'save_idf' : save_idf,
     'AirWall_Switch' : AirWall_Switch,
     'Roof_Switch' : Roof_Switch,
     'RL_flag' : RL_flag,
+    
+    'state_dim': state_dim,
+    'action_dim': action_dim,
     
     'epochs' : epochs,
     'lr' : lr,
@@ -223,7 +236,6 @@ class Building(object):
             self.x_list[i] = [np.min(self.x_list[i]), np.max(self.x_list[i])]
             self.y_list[i] = [np.min(self.y_list[i]), np.max(self.y_list[i])]
 
-                    
         self.min_X, self.max_X = np.min(self.x_list), np.max(self.x_list) 
         self.min_Y, self.max_Y = np.min(self.y_list), np.max(self.y_list) 
         
@@ -269,17 +281,17 @@ class Building(object):
             y1, y2 = np.int32([np.min(i[2]), np.max(i[2])]) +50
             
             self.map_2D[y1:y2, x1:x2] = round(zone_temp)
-            self.map_2D[y1:y2, x1] = 0
-            self.map_2D[y1:y2, x2] = 0
-            self.map_2D[y1, x1:x2] = 0
-            self.map_2D[y2, x1:x2] = 0
+            self.map_2D[y1:y2, x1] = F_bottom
+            self.map_2D[y1:y2, x2] = F_bottom
+            self.map_2D[y1, x1:x2] = F_bottom
+            self.map_2D[y2, x1:x2] = F_bottom
             
             self.zone_center_xy.append([(x1+x2)/2, self.Y-(y1+y2)/2])
             
         # plt.figure(figsize=(10,10))
         # plt.imshow(self.map_2D)
-        self.map_2D[0,0] = 50
-        self.map_2D[0,1] = 0
+        self.map_2D[0,0] = F_top
+        self.map_2D[0,1] = F_bottom
         self.map_2D[:,:] = self.map_2D[::-1,:]
 
         return self.map_2D, self.zone_center_xy
@@ -301,7 +313,171 @@ class Building(object):
 # map_2D = ITRC_2.draw_map(temp)
 
 ###############################################################################
+import openstudio
+'''
+For reproducibility, here are the versions I used to create and run this notebook
+_s = !pip list
+print(f"Pip package used initially: {[x for x in _s if 'openstudio' in x][0]}")
+print(f"OpenStudio Long Version:    {openstudio.openStudioLongVersion()}")    
+'''
 
+
+'''
+Openstudio setup
+define date, save model
+
+'''
+# test_name = "Room Air Zone Vertical Temperature Gradient"
+# osm_name_box = 'ITRC_2nd_6zone_OPEN.osm'
+
+current_dir = os.getcwd()
+osm_path = os.path.join(current_dir,osm_name_box)
+osm_path = openstudio.path(osm_path) # I guess this is how it wants the path for the translator
+print(osm_path)
+
+
+translator = openstudio.osversion.VersionTranslator()
+osm = translator.loadModel(osm_path).get()
+
+# Create an example model
+# m = openstudio.model.exampleModel()
+m = translator.loadModel(osm_path).get()
+
+zones = [zone for zone in openstudio.model.getThermalZones(m)]
+
+
+
+# Set output variables
+[x.remove() for x in m.getOutputVariables()]
+
+o = openstudio.model.OutputVariable("Site Outdoor Air Drybulb Temperature", m)
+o.setKeyValue("Environment")
+o.setReportingFrequency("Timestep")
+
+
+for var in ["Site Outdoor Air Drybulb Temperature",
+            "Site Wind Speed",
+            "Site Wind Direction",
+            "Site Solar Azimuth Angle",
+            "Site Solar Altitude Angle",
+            "Site Solar Hour Angle"]:
+    o = openstudio.model.OutputVariable(var, m)
+    o.setKeyValue('Environment')
+    o.setReportingFrequency("Timestep")
+
+# o = openstudio.model.OutputVariable("Zone Thermal Comfort Fanger Model PPD", m)
+# o.setKeyValue('*')
+# o.setReportingFrequency("Timestep")
+
+
+
+for var in ["Zone Air Relative Humidity",
+            "Zone Windows Total Heat Gain Energy",
+            "Zone Infiltration Mass",
+            "Zone Mechanical Ventilation Mass",
+            "Zone Mechanical Ventilation Mass Flow Rate",
+            "Zone Air Temperature",
+            "Zone Mean Radiant Temperature",
+            "Zone Thermostat Heating Setpoint Temperature",
+            "Zone Thermostat Cooling Setpoint Temperature"]:
+    o = openstudio.model.OutputVariable(var, m)
+    o.setKeyValue('Thermal Zone 1')
+    o.setReportingFrequency("Timestep")
+    
+for var in ["Zone Air Relative Humidity",
+            "Zone Windows Total Heat Gain Energy",
+            "Zone Infiltration Mass",
+            "Zone Mechanical Ventilation Mass",
+            "Zone Mechanical Ventilation Mass Flow Rate",
+            "Zone Air Temperature",
+            "Zone Mean Radiant Temperature",
+            "Zone Thermostat Heating Setpoint Temperature",
+            "Zone Thermostat Cooling Setpoint Temperature"]:
+    o = openstudio.model.OutputVariable(var, m)
+    o.setKeyValue('Thermal Zone 2')
+    o.setReportingFrequency("Timestep")
+    
+for var in ["Zone Air Relative Humidity",
+            "Zone Windows Total Heat Gain Energy",
+            "Zone Infiltration Mass",
+            "Zone Mechanical Ventilation Mass",
+            "Zone Mechanical Ventilation Mass Flow Rate",
+            "Zone Air Temperature",
+            "Zone Mean Radiant Temperature",
+            "Zone Thermostat Heating Setpoint Temperature",
+            "Zone Thermostat Cooling Setpoint Temperature"]:
+    o = openstudio.model.OutputVariable(var, m)
+    o.setKeyValue('Thermal Zone 3')
+    o.setReportingFrequency("Timestep")
+    
+for var in ["Zone Air Relative Humidity",
+            "Zone Windows Total Heat Gain Energy",
+            "Zone Infiltration Mass",
+            "Zone Mechanical Ventilation Mass",
+            "Zone Mechanical Ventilation Mass Flow Rate",
+            "Zone Air Temperature",
+            "Zone Mean Radiant Temperature",
+            "Zone Thermostat Heating Setpoint Temperature",
+            "Zone Thermostat Cooling Setpoint Temperature"]:
+    o = openstudio.model.OutputVariable(var, m)
+    o.setKeyValue('Thermal Zone 4')
+    o.setReportingFrequency("Timestep")
+    
+for var in ["Zone Air Relative Humidity",
+            "Zone Windows Total Heat Gain Energy",
+            "Zone Infiltration Mass",
+            "Zone Mechanical Ventilation Mass",
+            "Zone Mechanical Ventilation Mass Flow Rate",
+            "Zone Air Temperature",
+            "Zone Mean Radiant Temperature",
+            "Zone Thermostat Heating Setpoint Temperature",
+            "Zone Thermostat Cooling Setpoint Temperature"]:
+    o = openstudio.model.OutputVariable(var, m)
+    o.setKeyValue('Thermal Zone 5')
+    o.setReportingFrequency("Timestep")
+    
+for var in ["Zone Air Relative Humidity",
+            "Zone Windows Total Heat Gain Energy",
+            "Zone Infiltration Mass",
+            "Zone Mechanical Ventilation Mass",
+            "Zone Mechanical Ventilation Mass Flow Rate",
+            "Zone Air Temperature",
+            "Zone Mean Radiant Temperature",
+            "Zone Thermostat Heating Setpoint Temperature",
+            "Zone Thermostat Cooling Setpoint Temperature"]:
+    o = openstudio.model.OutputVariable(var, m)
+    o.setKeyValue('Thermal Zone 6')
+    o.setReportingFrequency("Timestep")
+
+
+# Set timestep
+timestep = m.getTimestep()
+timestep.setNumberOfTimestepsPerHour(timestep_per_hour)
+
+# Check the heating thermostat schedule
+# z = m.getThermalZones()[2]
+# print(z)
+# t = z.thermostatSetpointDualSetpoint().get()
+# heating_sch = t.heatingSetpointTemperatureSchedule().get()
+# o = heating_sch.to_ScheduleRuleset()
+
+
+# Restrict to one month of simulation
+r = m.getRunPeriod()
+# print(r)
+
+r.setBeginMonth(begin_month)
+r.setBeginDayOfMonth(begin_day_of_month)
+
+r.setEndMonth(end_month)
+r.setEndDayOfMonth(end_day_of_month)
+
+
+ft = openstudio.energyplus.ForwardTranslator()
+w = ft.translateModel(m)
+w.save(openstudio.path(save_idf), True)
+
+    
 
 
 
@@ -334,6 +510,7 @@ ITRC_2.idf.saveas(save_idf)
 
 THERMAL_MAP_2D = ITRC_2.init_map_2D()
 building_floor = ITRC_2.building_floor
+# plt.imshow(THERMAL_MAP_2D)
 
 
 print('save to:', save_idf)

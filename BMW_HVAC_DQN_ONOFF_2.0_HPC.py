@@ -21,19 +21,19 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 import torch
-import torchvision
+# import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
-import torch.backends.cudnn as cudnn
-import torchvision.transforms as transformtransforms
+# import torch.optim as optim
+# import torch.backends.cudnn as cudnn
+# import torchvision.transforms as transformtransforms
 
-from tqdm import tqdm
-from torchvision import models
-from torchsummary import summary
-from torch.autograd import Variable
-from torch.utils.data import Dataset, DataLoader
-from torchvision.transforms import ToPILImage
+# from tqdm import tqdm
+# from torchvision import models
+# from torchsummary import summary
+# from torch.autograd import Variable
+# from torch.utils.data import Dataset, DataLoader
+# from torchvision.transforms import ToPILImage
 
     
 
@@ -43,7 +43,6 @@ from torchvision.transforms import ToPILImage
 
 def temp_c_to_f(temp_c):#: float, arbitrary_arg=None):
     """Convert temp from C to F. Test function with arbitrary argument, for example."""
-    # x = arbitrary_arg
     return 1.8 * temp_c + 32
 
 def temp_f_to_c(temp_f):
@@ -88,9 +87,6 @@ class DNN_5(nn.Module):
 # device = torch.device("cuda")
 # model = DNN_5(5,2).to(device)
 # summary(model, (4320,5))
-
-
-###############################################################################
 
 
 ###############################################################################
@@ -188,18 +184,18 @@ class Data_Bank():
     def __init__(self):
         self.view_distance  = 2000
         self.NUM_HVAC       = 7
-        self.FPS            = 144
+        self.FPS            = FPS
         
-        self.E_factor_day       = 1e-6
-        self.T_factor_day       = 0.01
+        self.E_factor_day       = E_factor_day
+        self.T_factor_day       = T_factor_day
         
-        self.E_factor_night     = 1e-6
-        self.T_factor_night     = 0
+        self.E_factor_night     = E_factor_night
+        self.T_factor_night     = T_factor_night
                 
         self.episode_reward = 0
         self.episode_return = 0
 
-        self.RL_flag        = True
+        self.RL_flag        = RL_flag
         self.time_interval  = 0
         self.time_line      = []
         self.T_Violation    = []
@@ -818,6 +814,28 @@ def callback_function_DQN(state_argument):
         # print(C_list)
         # print(action_map)
         
+        data = {
+            'date': dt.strftime("%Y-%m-%d"),
+            'time': dt.strftime("%H:%M"),
+            'outdoor temperature': temp_c_to_f(oa_temp),
+            'indoor temperature 1': temp_c_to_f(zone_temp_2001),
+            'indoor temperature 2': temp_c_to_f(zone_temp_2002),
+            'indoor temperature 3': temp_c_to_f(zone_temp_2003),
+            'indoor temperature 4': temp_c_to_f(zone_temp_2004),
+            'indoor temperature 5': temp_c_to_f(zone_temp_2005),
+            'indoor temperature 6': temp_c_to_f(zone_temp_2006),
+            'setpoint 1': (H_new_1, C_new_1),
+            'setpoint 2': (H_new_2, C_new_2),
+            'setpoint 3': (H_new_3, C_new_3),
+            'setpoint 4': (H_new_4, C_new_4),
+            'setpoint 5': (H_new_5, C_new_5),
+            'setpoint 6': (H_new_6, C_new_6),
+            }
+        output_to_csv('./HVAC_data/test.csv', data)
+
+        
+
+
         ''' 
         reward define 
         
@@ -891,27 +909,6 @@ def callback_function_DQN(state_argument):
         reward_T = reward_T1+reward_T2+reward_T3+reward_T4+reward_T5+reward_T6
 
             
-        # # 3 Control Signal
-        # if np.abs(H1-C1)<10:
-        #     reward_HC = 0
-        # else:
-        #     reward_HC = -1
-            
-        # # 4 Smootheness
-        # if action_list[-1] != 0:
-        #     if action_list[-1]==1 and action_list[-2]==2:
-        #         reward_signal = -1
-        #     if action_list[-1]==2 and action_list[-2]==1:
-        #         reward_signal = -1
-    
-        # 4 Smootheness
-        # if action_1 != 0:
-            # reward_signal = -1
-        
-        # # if 1 in action_1:
-        # action_map = np.array(action_map)
-        # num_unstable = 6-len(action_map[action_map==0])
-        # reward_signal = -0.1 * num_unstable
         
         # 4 Smootheness
         current_action = HVAC_action_list[EPLUS.action_list[-1]]
@@ -1123,7 +1120,7 @@ def callback_function_DQN(state_argument):
         
         if EPLUS.RL_flag == True:
             # print(f'{time_interval}   {T_31} | {70}   {reward_T} | {reward_E} | {reward_signal}   {action_1} | {action_map}')
-            print('%d / %s   %.2f / 72   %.3f / %.3f / %.2f'%(time_interval,dt,T_mean[-1],reward_T,reward_E,reward_signal))
+            print('%d / %s   %.2f / 72   %.3f / %.3f / %.2f (T/E/S)'%(time_interval,dt,T_mean[-1],reward_T,reward_E,reward_signal))
 
         
         # plt.clf()
@@ -1285,25 +1282,50 @@ def delete_folder(folder_path):
         print(f"An error occurred while deleting folder '{folder_path}': {e}")
 
 
+import csv
+import pandas as pd
 
-# import pandas as pd
+def output_to_csv(file_path, data):
+    columns = ['date', 'time', 'outdoor temperature', 
+              'indoor temperature 1', 'indoor temperature 2',
+              'indoor temperature 3', 'indoor temperature 4',
+              'indoor temperature 5', 'indoor temperature 6',
+              'setpoint 1', 'setpoint 2', 'setpoint 3',
+              'setpoint 4', 'setpoint 5', 'setpoint 6']
+    
+    if not os.path.exists(file_path): 
+        df = pd.DataFrame(columns=columns)
 
-# def output_to_csv(file_path, data):
-#     # Read the CSV file
-#     df = pd.read_csv(file_path, delimiter=';')
+        # Save the updated DataFrame back to the CSV file
+        df.to_csv(file_path, sep=',', index=False)
+        print("CSV file generated successfully.")
+                
+    # Read the CSV file
+    df = pd.read_csv(file_path, delimiter=',')
     
-#     # Append the new variables and values to the bottom line
-#     new_row = {
-#         'date': date,
-#         'time': time,
-#         'outdoor temperature': outdoor_temp,
-#         'indoor temperature': indoor_temp,
-#         'setpoint': setpoint
-#     }
-#     df = df.append(new_row, ignore_index=True)
+    # Append the new variables and values to the bottom line
+    new_row = pd.DataFrame({
+        'date': data['date'],
+        'time': data['time'],
+        'outdoor temperature': data['outdoor temperature'],
+        'indoor temperature 1': data['indoor temperature 1'],
+        'indoor temperature 2': data['indoor temperature 2'],
+        'indoor temperature 3': data['indoor temperature 3'],
+        'indoor temperature 4': data['indoor temperature 4'],
+        'indoor temperature 5': data['indoor temperature 5'],
+        'indoor temperature 6': data['indoor temperature 6'],
+        'setpoint 1': data['setpoint 1'],
+        'setpoint 2': data['setpoint 2'],
+        'setpoint 3': data['setpoint 3'],
+        'setpoint 4': data['setpoint 4'],
+        'setpoint 5': data['setpoint 5'],
+        'setpoint 6': data['setpoint 6']
+    })
+    # df = df.append(new_row, ignore_index=True)
+    df = pd.concat([df, new_row])
     
-#     # Save the updated DataFrame back to the CSV file
-#     df.to_csv(file_path, sep=';', index=False)
+    # Save the updated DataFrame back to the CSV file
+    df.to_csv(file_path, sep=',', index=False)
 
         
 ###############################################################################
@@ -1313,37 +1335,19 @@ if __name__ == '__main__':
     os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
     TORCH_CUDA_ARCH_LIST="8.6"
     
-    import shutil
+    # import shutil
     folder_path = "/out"
     delete_folder(folder_path)
 
 
-    # Use OpenStudio to create a Model
-    import openstudio
     '''
-    For reproducibility, here are the versions I used to create and run this notebook
-    _s = !pip list
-    print(f"Pip package used initially: {[x for x in _s if 'openstudio' in x][0]}")
-    print(f"OpenStudio Long Version:    {openstudio.openStudioLongVersion()}")    
-    '''
-
-    # Run EnergyPlus in API mode
-    # insert the repo build tree or install path into the search Path, then import the EnergyPlus API
-    import sys
-    sys.path.insert(0, './openstudioapplication-1.4.0/EnergyPlus')
-
-    # from pyenergyplus import api
-    from pyenergyplus.api import EnergyPlusAPI
-    import pyenergyplus
-    print(pyenergyplus.api.EnergyPlusAPI.api_version())
-    print(pyenergyplus.api.api_path())
-    
-    
-    
+    Import parameters from file  
+    '''    
     parameters = read_parameters_from_txt('parameters.txt')
     
-    
+    EPlus_file = parameters['EPlus_file']
     osm_name_box = parameters['osm_name_box']
+    weather_data = parameters['weather_data']
     timestep_per_hour = int(parameters['timestep_per_hour'])
     begin_month = int(parameters['begin_month'])
     begin_day_of_month = int(parameters['begin_day_of_month'])
@@ -1354,6 +1358,9 @@ if __name__ == '__main__':
     Roof_Switch = parameters['Roof_Switch']
     RL_flag = bool(parameters['RL_flag'])
     
+    state_dim = int(parameters['state_dim'])
+    action_dim = int(parameters['action_dim'])
+
     epochs = int(parameters['epochs'])
     lr = float(parameters['lr'])
     gamma = float(parameters['gamma'])
@@ -1376,6 +1383,23 @@ if __name__ == '__main__':
     
 
 
+    # Use OpenStudio to create a Model
+    import openstudio
+
+
+    # Run EnergyPlus in API mode
+    # insert the repo build tree or install path into the search Path, then import the EnergyPlus API
+    import sys
+    sys.path.insert(0, EPlus_file)
+
+    # from pyenergyplus import api
+    from pyenergyplus.api import EnergyPlusAPI
+    import pyenergyplus
+    print(pyenergyplus.api.EnergyPlusAPI.api_version())
+    print(pyenergyplus.api.api_path())
+    
+    
+
 
     print('torch.version: ',torch. __version__)
     print('torch.version.cuda: ',torch.version.cuda)
@@ -1389,173 +1413,6 @@ if __name__ == '__main__':
 
     
     
-    
-    
-    '''
-    Openstudio setup
-    define date, save model
-    
-    '''
-    # test_name = "Room Air Zone Vertical Temperature Gradient"
-    # osm_name_box = 'ITRC_2nd_6zone_OPEN.osm'
-    
-    current_dir = os.getcwd()
-    osm_path = os.path.join(current_dir,osm_name_box)
-    osm_path = openstudio.path(osm_path) # I guess this is how it wants the path for the translator
-    print(osm_path)
-    
-    
-    translator = openstudio.osversion.VersionTranslator()
-    osm = translator.loadModel(osm_path).get()
-    
-    # Create an example model
-    # m = openstudio.model.exampleModel()
-    m = translator.loadModel(osm_path).get()
-    
-    zones = [zone for zone in openstudio.model.getThermalZones(m)]
-    
-    
-    
-    # Set output variables
-    [x.remove() for x in m.getOutputVariables()]
-    
-    o = openstudio.model.OutputVariable("Site Outdoor Air Drybulb Temperature", m)
-    o.setKeyValue("Environment")
-    o.setReportingFrequency("Timestep")
-    
-    
-    for var in ["Site Outdoor Air Drybulb Temperature",
-                "Site Wind Speed",
-                "Site Wind Direction",
-                "Site Solar Azimuth Angle",
-                "Site Solar Altitude Angle",
-                "Site Solar Hour Angle"]:
-        o = openstudio.model.OutputVariable(var, m)
-        o.setKeyValue('Environment')
-        o.setReportingFrequency("Timestep")
-    
-    # o = openstudio.model.OutputVariable("Zone Thermal Comfort Fanger Model PPD", m)
-    # o.setKeyValue('*')
-    # o.setReportingFrequency("Timestep")
-    
-    
-    
-    
-    
-    for var in ["Zone Air Relative Humidity",
-                "Zone Windows Total Heat Gain Energy",
-                "Zone Infiltration Mass",
-                "Zone Mechanical Ventilation Mass",
-                "Zone Mechanical Ventilation Mass Flow Rate",
-                "Zone Air Temperature",
-                "Zone Mean Radiant Temperature",
-                "Zone Thermostat Heating Setpoint Temperature",
-                "Zone Thermostat Cooling Setpoint Temperature"]:
-        o = openstudio.model.OutputVariable(var, m)
-        o.setKeyValue('Thermal Zone 1')
-        o.setReportingFrequency("Timestep")
-        
-    for var in ["Zone Air Relative Humidity",
-                "Zone Windows Total Heat Gain Energy",
-                "Zone Infiltration Mass",
-                "Zone Mechanical Ventilation Mass",
-                "Zone Mechanical Ventilation Mass Flow Rate",
-                "Zone Air Temperature",
-                "Zone Mean Radiant Temperature",
-                "Zone Thermostat Heating Setpoint Temperature",
-                "Zone Thermostat Cooling Setpoint Temperature"]:
-        o = openstudio.model.OutputVariable(var, m)
-        o.setKeyValue('Thermal Zone 2')
-        o.setReportingFrequency("Timestep")
-        
-    for var in ["Zone Air Relative Humidity",
-                "Zone Windows Total Heat Gain Energy",
-                "Zone Infiltration Mass",
-                "Zone Mechanical Ventilation Mass",
-                "Zone Mechanical Ventilation Mass Flow Rate",
-                "Zone Air Temperature",
-                "Zone Mean Radiant Temperature",
-                "Zone Thermostat Heating Setpoint Temperature",
-                "Zone Thermostat Cooling Setpoint Temperature"]:
-        o = openstudio.model.OutputVariable(var, m)
-        o.setKeyValue('Thermal Zone 3')
-        o.setReportingFrequency("Timestep")
-        
-    for var in ["Zone Air Relative Humidity",
-                "Zone Windows Total Heat Gain Energy",
-                "Zone Infiltration Mass",
-                "Zone Mechanical Ventilation Mass",
-                "Zone Mechanical Ventilation Mass Flow Rate",
-                "Zone Air Temperature",
-                "Zone Mean Radiant Temperature",
-                "Zone Thermostat Heating Setpoint Temperature",
-                "Zone Thermostat Cooling Setpoint Temperature"]:
-        o = openstudio.model.OutputVariable(var, m)
-        o.setKeyValue('Thermal Zone 4')
-        o.setReportingFrequency("Timestep")
-        
-    for var in ["Zone Air Relative Humidity",
-                "Zone Windows Total Heat Gain Energy",
-                "Zone Infiltration Mass",
-                "Zone Mechanical Ventilation Mass",
-                "Zone Mechanical Ventilation Mass Flow Rate",
-                "Zone Air Temperature",
-                "Zone Mean Radiant Temperature",
-                "Zone Thermostat Heating Setpoint Temperature",
-                "Zone Thermostat Cooling Setpoint Temperature"]:
-        o = openstudio.model.OutputVariable(var, m)
-        o.setKeyValue('Thermal Zone 5')
-        o.setReportingFrequency("Timestep")
-        
-    for var in ["Zone Air Relative Humidity",
-                "Zone Windows Total Heat Gain Energy",
-                "Zone Infiltration Mass",
-                "Zone Mechanical Ventilation Mass",
-                "Zone Mechanical Ventilation Mass Flow Rate",
-                "Zone Air Temperature",
-                "Zone Mean Radiant Temperature",
-                "Zone Thermostat Heating Setpoint Temperature",
-                "Zone Thermostat Cooling Setpoint Temperature"]:
-        o = openstudio.model.OutputVariable(var, m)
-        o.setKeyValue('Thermal Zone 6')
-        o.setReportingFrequency("Timestep")
-
-    
-    # Set timestep
-    timestep = m.getTimestep()
-    timestep.setNumberOfTimestepsPerHour(timestep_per_hour)
-    
-    # Check the heating thermostat schedule
-    # z = m.getThermalZones()[2]
-    # print(z)
-    # t = z.thermostatSetpointDualSetpoint().get()
-    # heating_sch = t.heatingSetpointTemperatureSchedule().get()
-    # o = heating_sch.to_ScheduleRuleset()
-    
-    
-    # Restrict to one month of simulation
-    r = m.getRunPeriod()
-    # print(r)
-    
-    r.setBeginMonth(begin_month)
-    r.setBeginDayOfMonth(begin_day_of_month)
-    
-    r.setEndMonth(end_month)
-    r.setEndDayOfMonth(end_day_of_month)
-
-    
-    ft = openstudio.energyplus.ForwardTranslator()
-    w = ft.translateModel(m)
-    w.save(openstudio.path(save_idf), True)
-    
-    
-    
-    
-    
-    
-    
-    
-    
     HVAC_action_list = []
     for HC_1 in [0,1]:
         for HC_2 in [0,1]:
@@ -1566,9 +1423,6 @@ if __name__ == '__main__':
                             HVAC_action_list.append([HC_1,HC_2,HC_3,HC_4,HC_5,HC_6])
         
 
-
-
-    
     
     '''
     main function
@@ -1581,23 +1435,24 @@ if __name__ == '__main__':
     from mpl_toolkits import axisartist
     
     
-    # fig = plt.figure(figsize=(20,30), dpi=100)
-    # fig.subplots_adjust(left=0.05, right=0.8)
-    # ax1 = plt.subplot(2,1,1)
-    # # ax3 = plt.subplot(2,1,2)
-    # ax2 = plt.subplot(2,1,2)
-    # divider = make_axes_locatable(ax2)
-    # cax = divider.append_axes('right', size='5%', pad=0.1)
-    # cax.tick_params(labelsize=20)
-    # trans_1 = mtransforms.blended_transform_factory(ax1.transData, ax1.transAxes)
-    # # trans_3 = mtransforms.blended_transform_factory(ax3.transData, ax3.transAxes)
-    # # twin1 = ax1.twinx()
-    # # twin2 = ax1.twinx()
-    # # twin2.spines['right'].set_position(("axes", 2))
+    fig = plt.figure(figsize=(20,30), dpi=100)
+    fig.subplots_adjust(left=0.05, right=0.75)
+    ax1 = plt.subplot(2,1,1)
+    # ax3 = plt.subplot(2,1,2)
+    ax2 = plt.subplot(2,1,2)
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.1)
+    cax.tick_params(labelsize=20)
+    trans_1 = mtransforms.blended_transform_factory(ax1.transData, ax1.transAxes)
+    # trans_3 = mtransforms.blended_transform_factory(ax3.transData, ax3.transAxes)
+    # twin1 = ax1.twinx()
+    # twin2 = ax1.twinx()
+    # twin2.spines['right'].set_position(("axes", 2))
     
+    ax3 = ax1.twinx()
+    ax3.tick_params(labelsize=16)
     
-    
-    
+        
     '''
     E with rule based
     
@@ -1609,34 +1464,39 @@ if __name__ == '__main__':
     filename_to_run = save_idf
     
     
-    # 
-    api = EnergyPlusAPI()
+    # # 
+    # api = EnergyPlusAPI()
     
-    E_state = api.state_manager.new_state()
-    api.runtime.set_console_output_status(E_state, False)
-    api.runtime.callback_begin_zone_timestep_after_init_heat_balance(E_state, callback_function_DQN)
+    # E_state = api.state_manager.new_state()
+    # api.runtime.set_console_output_status(E_state, False)
+    # api.runtime.callback_begin_zone_timestep_after_init_heat_balance(E_state, callback_function_DQN)
        
-    api.runtime.run_energyplus(E_state,
-        [
-            '-w', './weather_data/USA_SC_Greenville-Spartanburg.Intl.AP.723120_TMY3.epw',
-            '-d', 'out/',
-            filename_to_run
-        ]
-    )
+    # api.runtime.run_energyplus(E_state,
+    #     [
+    #         '-w', weather_data,
+    #         '-d', 'out/',
+    #         filename_to_run
+    #     ]
+    # )
     
-    # If you need to call run_energyplus again, then reset the state first
-    api.state_manager.reset_state(E_state)
-    api.state_manager.delete_state(E_state)
-    
-    
-    E_HVAC_all_RBC = copy.deepcopy(EPLUS.E_HVAC_all)
-    E_Facility_all_RBC = copy.deepcopy(EPLUS.E_Facility)
+    # # If you need to call run_energyplus again, then reset the state first
+    # api.state_manager.reset_state(E_state)
+    # api.state_manager.delete_state(E_state)
     
     
-    print(np.sum(EPLUS.E_HVAC_all))
-    print(np.mean(EPLUS.T_maen))
-    print(np.mean(EPLUS.T_diff))
-    print(np.mean(EPLUS.T_var))
+    # E_HVAC_all_RBC = copy.deepcopy(EPLUS.E_HVAC_all)
+    # E_Facility_all_RBC = copy.deepcopy(EPLUS.E_Facility)
+    
+    
+    # print(np.sum(EPLUS.E_HVAC_all))
+    # print(np.mean(EPLUS.T_maen))
+    # print(np.mean(EPLUS.T_diff))
+    # print(np.mean(EPLUS.T_var))
+    
+    
+    
+    
+    
     
     
     
@@ -1645,29 +1505,13 @@ if __name__ == '__main__':
     
     '''
     
-    # epochs = 20
-    # lr = 1e-3
-    # num_episodes = 100
-    
-    # gamma = 0.9
-    # epsilon = 0
-    # target_update = 100
-    # buffer_size = 10000
-    # minimal_size = 200
-    # batch_size = 128
-    
-    state_dim = 15
-    action_dim = 2**6
-    
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     agent = DQN(state_dim, action_dim, lr, gamma, epsilon, target_update, device)
     replay_buffer = ReplayBuffer(buffer_size)
     
     # agent.q_net.load_state_dict(torch.load('./weights/Enet_last_19.pth'))
     
-    
-    
-    
+
     '''
     DQN
     '''
@@ -1677,17 +1521,12 @@ if __name__ == '__main__':
     
     for epoch in range(epochs):
         time_start = time.time()
-    
+        print('iteration: ', epoch)
+
     
         EPLUS = Data_Bank()
         EPLUS.FPS = FPS
         EPLUS.RL_flag = RL_flag
-    
-    
-        print('iteration: ', epoch)
-        # file_name= 'ITRC_2nd_1zone.osm'
-        # output_name = 'test.idf'
-        # utils.OSM(file_name, output_name, time_step, start_month, start_day, end_month, end_day)
     
     
         # 
@@ -1700,7 +1539,7 @@ if __name__ == '__main__':
            
         api.runtime.run_energyplus(E_state,
             [
-                '-w', './weather_data/USA_SC_Greenville-Spartanburg.Intl.AP.723120_TMY3.epw',
+                '-w', weather_data,
                 '-d', 'out/',
                 filename_to_run
             ]
@@ -1719,7 +1558,6 @@ if __name__ == '__main__':
         print(time_round)
             
             
-        
         # plt.figure(figsize=(30,10), dpi=100)
         # plt.plot(E_HVAC_all_RBC, label='Default')
         # plt.plot(E_HVAC_all_DQN, label='DQN')
@@ -1779,7 +1617,7 @@ if __name__ == '__main__':
         # Benchmark[epoch, 28] = EPLUS.E_Heating
         # Benchmark[epoch, 29] = EPLUS.E_Cooling
     
-        np.save('Benchmark.npy', Benchmark, allow_pickle=True)
+        np.save('./Benchmark_data/Benchmark.npy', Benchmark, allow_pickle=True)
         
         
         
