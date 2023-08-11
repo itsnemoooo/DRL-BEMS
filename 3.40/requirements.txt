@@ -1,0 +1,6 @@
+numpy
+pandas
+matplotlib
+opencv-python==4.7.0.72
+openstudio==3.4.0
+eppy==0.5.63
