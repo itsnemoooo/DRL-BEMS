@@ -22,6 +22,24 @@ import matplotlib.pyplot as plt
 
 
 
+# Specify the folder paths you want to create
+folder_paths = [
+    "Benchmark_data",
+    "HVAC_data",
+    "weights",
+    "plot"
+    # Add more folder paths if needed
+]
+
+for folder_path in folder_paths:
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print(f"Folder '{folder_path}' created.")
+    else:
+        print(f"Folder '{folder_path}' already exists.")
+
+
+
 def save_parameters_to_txt(parameters, file_path):
     with open(file_path, 'w') as file:
         for key, value in parameters.items():
@@ -30,9 +48,11 @@ def save_parameters_to_txt(parameters, file_path):
     # print(f'Parameters saved to {file_path}')
 
 
+openstudio_path = './openstudioapplication-1.6.0/'
 EPlus_file = './openstudioapplication-1.6.0/EnergyPlus'
-osm_name_box = './building_model/ITRC_2nd_6zone_OPEN_3.60.osm'
+osm_name_box = './building_model/ITRC_2nd_6zone_OPEN_3.61.osm'
 weather_data = './weather_data/USA_SC_Greenville-Spartanburg.Intl.AP.723120_TMY3.epw'
+iddfile = 'Energy+.idd'
 save_idf = 'run.idf'
 HVAC_output = False
 
@@ -150,7 +170,7 @@ class Building(object):
     '''
 
     def __init__(self, filename_to_run):
-        iddfile = "Energy+.idd"
+        # iddfile = iddfile
         IDF.setiddname(iddfile)    
         idf1 = IDF(filename_to_run)
         # print(idf1.idfobjects['BUILDING']) 
@@ -485,7 +505,6 @@ w.save(openstudio.path(save_idf), True)
 
 filename_to_run = save_idf
 
-iddfile = "Energy+.idd"
 IDF.setiddname(iddfile)
 
 
@@ -516,7 +535,6 @@ building_floor = ITRC_2.building_floor
 
 
 print('save to:', save_idf)
-
 
 
 
