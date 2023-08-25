@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jun 22 16:29:04 2022
@@ -164,10 +166,9 @@ class DQN:
 
     
 def HVAC_action(action, temp):
-    
         if action == 0:
-            H_new = F_bottom
-            C_new = F_top
+            H_new = config.F_bottom
+            C_new = config.F_top
             
         elif action == 1:
             H_new = temp[0]
@@ -175,6 +176,14 @@ def HVAC_action(action, temp):
             
         return int(H_new), int(C_new)
     
+
+def HVAC_status(hvac_htg):
+    if hvac_htg == EPLUS.set_temp[0]:
+        return 1
+    else:
+        return 0
+
+
 
     
 
@@ -184,22 +193,25 @@ class Data_Bank():
     def __init__(self):
         self.view_distance  = 2000
         self.NUM_HVAC       = 6
-        self.FPS            = FPS
+        self.FPS            = config.FPS
+        self.set_temp       = [71,74]
         
-        self.E_factor_day       = E_factor_day
-        self.T_factor_day       = T_factor_day
+        self.E_factor_day       = config.E_factor_day
+        self.T_factor_day       = config.T_factor_day
         
-        self.E_factor_night     = E_factor_night
-        self.T_factor_night     = T_factor_night
+        self.E_factor_night     = config.E_factor_night
+        self.T_factor_night     = config.T_factor_night
                 
         self.episode_reward = 0
         self.episode_return = 0
+        self.score          = []
 
-        self.RL_flag        = RL_flag
+
+        self.Train        = config.Train
         self.time_interval  = 0
         self.time_line      = []
-        self.T_Violation    = []
-        self.score          = []
+        self.T_violation    = [0]
+        self.T_violation_legacy = [0]
         
         self.T_diff         = []
         self.T_maen         = []
@@ -388,15 +400,15 @@ class Data_Bank():
 
 
 def callback_function_DQN(state_argument):
-    RL_flag = EPLUS.RL_flag
+    # RL_flag = EPLUS.RL_flag
     view_distance = EPLUS.view_distance
     time_interval = EPLUS.time_interval
-    NUM_HVAC = EPLUS.NUM_HVAC
-    FPS = EPLUS.FPS
-    T_factor_day = EPLUS.T_factor_day
-    E_factor_day = EPLUS.E_factor_day
-    T_factor_night = EPLUS.T_factor_night
-    E_factor_night = EPLUS.E_factor_night
+    # NUM_HVAC = EPLUS.NUM_HVAC
+    # FPS = EPLUS.FPS
+    # T_factor_day = EPLUS.T_factor_day
+    # E_factor_day = EPLUS.E_factor_day
+    # T_factor_night = EPLUS.T_factor_night
+    # E_factor_night = EPLUS.E_factor_night
     
     
     '''
@@ -492,15 +504,15 @@ def callback_function_DQN(state_argument):
     
     '''Temperature'''
     
-    oa_humd      = api.exchange.get_variable_value(state_argument, EPLUS.oa_humd_handle)
-    oa_windspeed = api.exchange.get_variable_value(state_argument, EPLUS.oa_windspeed_handle)
-    oa_winddirct = api.exchange.get_variable_value(state_argument, EPLUS.oa_winddirct_handle)
-    oa_solar_azi = api.exchange.get_variable_value(state_argument, EPLUS.oa_solar_azi_handle)
-    oa_solar_alt = api.exchange.get_variable_value(state_argument, EPLUS.oa_solar_alt_handle)
-    oa_solar_ang = api.exchange.get_variable_value(state_argument, EPLUS.oa_solar_ang_handle)
+    # oa_humd      = api.exchange.get_variable_value(state_argument, EPLUS.oa_humd_handle)
+    # oa_windspeed = api.exchange.get_variable_value(state_argument, EPLUS.oa_windspeed_handle)
+    # oa_winddirct = api.exchange.get_variable_value(state_argument, EPLUS.oa_winddirct_handle)
+    # oa_solar_azi = api.exchange.get_variable_value(state_argument, EPLUS.oa_solar_azi_handle)
+    # oa_solar_alt = api.exchange.get_variable_value(state_argument, EPLUS.oa_solar_alt_handle)
+    # oa_solar_ang = api.exchange.get_variable_value(state_argument, EPLUS.oa_solar_ang_handle)
         
     oa_temp = api.exchange.get_variable_value(state_argument,        EPLUS.oa_temp_handle)
-    zone_temp = api.exchange.get_variable_value(state_argument,      EPLUS.zone_temp_handle)
+    # zone_temp = api.exchange.get_variable_value(state_argument,      EPLUS.zone_temp_handle)
     # zone_htg_tstat = api.exchange.get_variable_value(state_argument, EPLUS.zone_htg_tstat_handle)
     # zone_clg_tstat = api.exchange.get_variable_value(state_argument, EPLUS.zone_clg_tstat_handle)
     
@@ -530,28 +542,28 @@ def callback_function_DQN(state_argument):
     # zone_PPD_2003 = api.exchange.get_variable_value(state_argument, EPLUS.zone_PPD_handle_2003)
     # print(zone_PPD_2003)
     
-    zone_humd_2001 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2001)
-    zone_humd_2002 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2002)
-    zone_humd_2003 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2003)
-    zone_humd_2004 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2004)
-    zone_humd_2005 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2005)
-    zone_humd_2006 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2006)
+    # zone_humd_2001 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2001)
+    # zone_humd_2002 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2002)
+    # zone_humd_2003 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2003)
+    # zone_humd_2004 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2004)
+    # zone_humd_2005 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2005)
+    # zone_humd_2006 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2006)
     # zone_humd_2007 = api.exchange.get_variable_value(state_argument, EPLUS.zone_humd_handle_2007)
 
-    zone_window_2001 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2001)
-    zone_window_2002 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2002)
-    zone_window_2003 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2003)
-    zone_window_2004 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2004)
-    zone_window_2005 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2005)
-    zone_window_2006 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2006)
+    # zone_window_2001 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2001)
+    # zone_window_2002 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2002)
+    # zone_window_2003 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2003)
+    # zone_window_2004 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2004)
+    # zone_window_2005 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2005)
+    # zone_window_2006 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2006)
     # zone_window_2007 = api.exchange.get_variable_value(state_argument, EPLUS.zone_window_handle_2007)
 
-    zone_ventmass_2001 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2001)
-    zone_ventmass_2002 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2002)
-    zone_ventmass_2003 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2003)
-    zone_ventmass_2004 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2004)
-    zone_ventmass_2005 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2005)
-    zone_ventmass_2006 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2006)
+    # zone_ventmass_2001 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2001)
+    # zone_ventmass_2002 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2002)
+    # zone_ventmass_2003 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2003)
+    # zone_ventmass_2004 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2004)
+    # zone_ventmass_2005 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2005)
+    # zone_ventmass_2006 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2006)
     # zone_ventmass_2007 = api.exchange.get_variable_value(state_argument, EPLUS.zone_temp_handle_2007)
 
 
@@ -559,30 +571,30 @@ def callback_function_DQN(state_argument):
     '''
     Store data
     '''
-    EPLUS.y_humd.append(oa_humd)
-    EPLUS.y_wind.append([oa_windspeed,oa_winddirct])
-    EPLUS.y_solar.append([oa_solar_azi, oa_solar_alt, oa_solar_ang])
-    EPLUS.y_zone_humd.append([zone_humd_2001,zone_humd_2002,zone_humd_2003,
-                              zone_humd_2004,zone_humd_2005,zone_humd_2006
-                              # ,zone_humd_2007
-                              ])
+    # EPLUS.y_humd.append(oa_humd)
+    # EPLUS.y_wind.append([oa_windspeed,oa_winddirct])
+    # EPLUS.y_solar.append([oa_solar_azi, oa_solar_alt, oa_solar_ang])
+    # EPLUS.y_zone_humd.append([zone_humd_2001,zone_humd_2002,zone_humd_2003,
+    #                           zone_humd_2004,zone_humd_2005,zone_humd_2006
+    #                           # ,zone_humd_2007
+    #                           ])
     
-    EPLUS.y_zone_window.append([zone_window_2001,zone_window_2002,zone_window_2003,
-                                zone_window_2004,zone_window_2005,zone_window_2006
-                                # ,zone_window_2007
-                                ])
+    # EPLUS.y_zone_window.append([zone_window_2001,zone_window_2002,zone_window_2003,
+    #                             zone_window_2004,zone_window_2005,zone_window_2006
+    #                             # ,zone_window_2007
+    #                             ])
     
-    EPLUS.y_zone_ventmass.append([zone_ventmass_2001,zone_ventmass_2002,zone_ventmass_2003,
-                                  zone_ventmass_2004,zone_ventmass_2005,zone_ventmass_2006
-                                  # ,zone_ventmass_2007
-                                  ])
+    # EPLUS.y_zone_ventmass.append([zone_ventmass_2001,zone_ventmass_2002,zone_ventmass_2003,
+    #                               zone_ventmass_2004,zone_ventmass_2005,zone_ventmass_2006
+    #                               # ,zone_ventmass_2007
+    #                               ])
 
 
 
     EPLUS.y_outdoor.append(temp_c_to_f(oa_temp))
     # EPLUS.y_htg.append(temp_c_to_f(    zone_htg_tstat))
     # EPLUS.y_clg.append(temp_c_to_f(    zone_clg_tstat))
-    EPLUS.y_zone.append(temp_c_to_f(   zone_temp))
+    # EPLUS.y_zone.append(temp_c_to_f(   zone_temp))
     
     EPLUS.y_zone_temp_2001.append(temp_c_to_f(zone_temp_2001))
     EPLUS.y_zone_temp_2002.append(temp_c_to_f(zone_temp_2002))
@@ -614,7 +626,6 @@ def callback_function_DQN(state_argument):
                                    zone_temp_2006]))
     
     EPLUS.y_zone_temp.append(T_list)
-    
     
     T_mean = np.mean(T_list)
     
@@ -685,12 +696,12 @@ def callback_function_DQN(state_argument):
     DQN 
     
     '''
-    if EPLUS.RL_flag == False:
+    if EPLUS.Train == False:
         EPLUS.episode_reward.append(0)
 
-    if EPLUS.RL_flag == True:
+    if EPLUS.Train == True:
     
-        if time_interval == 0:
+        if EPLUS.time_interval == 0:
             EPLUS.episode_reward.append(0)
             EPLUS.action_list.append(0)
     
@@ -717,16 +728,16 @@ def callback_function_DQN(state_argument):
         T_50 = EPLUS.y_zone_temp_2005[-2] 
         T_60 = EPLUS.y_zone_temp_2006[-2] 
         
-        H_10 = EPLUS.hvac_htg_2001[-2] 
-        H_20 = EPLUS.hvac_htg_2002[-2] 
-        H_30 = EPLUS.hvac_htg_2003[-2] 
-        H_40 = EPLUS.hvac_htg_2004[-2] 
-        H_50 = EPLUS.hvac_htg_2005[-2] 
-        H_60 = EPLUS.hvac_htg_2006[-2] 
+        H_10 = HVAC_status(EPLUS.hvac_htg_2001[-2])
+        H_20 = HVAC_status(EPLUS.hvac_htg_2002[-2])
+        H_30 = HVAC_status(EPLUS.hvac_htg_2003[-2])
+        H_40 = HVAC_status(EPLUS.hvac_htg_2004[-2])
+        H_50 = HVAC_status(EPLUS.hvac_htg_2005[-2])
+        H_60 = HVAC_status(EPLUS.hvac_htg_2006[-2])
         
-        state_0 = [O0/100,T_30/100,W0,
+        state_0 = [O0/100,W0,
                    T_10/100,T_20/100,T_30/100,T_40/100,T_50/100,T_60/100,
-                   H_10/100,H_20/100,H_30/100,H_40/100,H_50/100,H_60/100]
+                   H_10,H_20,H_30,H_40,H_50,H_60]
         
         # print(state_0)
 
@@ -749,19 +760,18 @@ def callback_function_DQN(state_argument):
         T_51 = EPLUS.y_zone_temp_2005[-1] 
         T_61 = EPLUS.y_zone_temp_2006[-1] 
         
-        H_11 = EPLUS.hvac_htg_2001[-1]
-        H_21 = EPLUS.hvac_htg_2002[-1] 
-        H_31 = EPLUS.hvac_htg_2003[-1] 
-        H_41 = EPLUS.hvac_htg_2004[-1] 
-        H_51 = EPLUS.hvac_htg_2005[-1]
-        H_61 = EPLUS.hvac_htg_2006[-1]
+        H_11 = HVAC_status(EPLUS.hvac_htg_2001[-1])
+        H_21 = HVAC_status(EPLUS.hvac_htg_2002[-1])
+        H_31 = HVAC_status(EPLUS.hvac_htg_2003[-1]) 
+        H_41 = HVAC_status(EPLUS.hvac_htg_2004[-1]) 
+        H_51 = HVAC_status(EPLUS.hvac_htg_2005[-1])
+        H_61 = HVAC_status(EPLUS.hvac_htg_2006[-1])
         
         
         # t_1
-        state_1 = [O1/100,T_31/100,W1,
+        state_1 = [O1/100,W1,
                    T_11/100,T_21/100,T_31/100,T_41/100,T_51/100,T_61/100,
-                   H_11/100,H_21/100,H_31/100,H_41/100,H_51/100,H_61/100] 
-                   # C_11,C_21,C_31,C_41,C_51,C_61]
+                   H_11,H_21,H_31,H_41,H_51,H_61] 
         
         # print(state_1)
 
@@ -772,22 +782,16 @@ def callback_function_DQN(state_argument):
 
 
 
-        set_temp = [71,74]
+        
 
         # Take action
-        H_new_1, C_new_1 = HVAC_action(action_map[0], set_temp)
-        H_new_2, C_new_2 = HVAC_action(action_map[1], set_temp)
-        H_new_3, C_new_3 = HVAC_action(action_map[2], set_temp)
-        H_new_4, C_new_4 = HVAC_action(action_map[3], set_temp)
-        H_new_5, C_new_5 = HVAC_action(action_map[4], set_temp)
-        H_new_6, C_new_6 = HVAC_action(action_map[5], set_temp)
-        # api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2001_handle, temp_f_to_c(H_new))
-        # api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2001_handle, temp_f_to_c(C_new))
-        # api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2003_handle, temp_f_to_c(120))
-        # api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2003_handle, temp_f_to_c(120))
-
-        
-        
+        H_new_1, C_new_1 = HVAC_action(action_map[0], EPLUS.set_temp)
+        H_new_2, C_new_2 = HVAC_action(action_map[1], EPLUS.set_temp)
+        H_new_3, C_new_3 = HVAC_action(action_map[2], EPLUS.set_temp)
+        H_new_4, C_new_4 = HVAC_action(action_map[3], EPLUS.set_temp)
+        H_new_5, C_new_5 = HVAC_action(action_map[4], EPLUS.set_temp)
+        H_new_6, C_new_6 = HVAC_action(action_map[5], EPLUS.set_temp)
+ 
         api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2001_handle, temp_f_to_c(H_new_1))
         api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2001_handle, temp_f_to_c(C_new_1))
         api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2002_handle, temp_f_to_c(H_new_2))
@@ -814,28 +818,7 @@ def callback_function_DQN(state_argument):
         # print(C_list)
         # print(action_map)
         
-        if HVAC_output==True:
-    
-            data = {
-                'date': dt.strftime("%Y-%m-%d"),
-                'time': dt.strftime("%H:%M"),
-                'outdoor temperature': temp_c_to_f(oa_temp),
-                'indoor temperature 1': temp_c_to_f(zone_temp_2001),
-                'indoor temperature 2': temp_c_to_f(zone_temp_2002),
-                'indoor temperature 3': temp_c_to_f(zone_temp_2003),
-                'indoor temperature 4': temp_c_to_f(zone_temp_2004),
-                'indoor temperature 5': temp_c_to_f(zone_temp_2005),
-                'indoor temperature 6': temp_c_to_f(zone_temp_2006),
-                'setpoint 1': (H_new_1, C_new_1),
-                'setpoint 2': (H_new_2, C_new_2),
-                'setpoint 3': (H_new_3, C_new_3),
-                'setpoint 4': (H_new_4, C_new_4),
-                'setpoint 5': (H_new_5, C_new_5),
-                'setpoint 6': (H_new_6, C_new_6),
-                }
-            
-            output_to_csv(f'./HVAC_data/{HVAC_file_name}.csv', data)
-
+        
         
 
         ''' 
@@ -843,72 +826,30 @@ def callback_function_DQN(state_argument):
         
         '''
         if is_worktime:
-            E_factor = E_factor_day
-            T_factor = T_factor_day
-            work_flag = 0
-            reward_signal = 0
-            
-            # E_save = E_factor
-            # T_save = T_factor
+            E_factor = config.E_factor_day
+            T_factor = config.T_factor_day
+            positive_reward = config.positive_reward
             
         else:
-            E_factor = E_factor_night
-            T_factor = T_factor_night
-            work_flag = 0
-            reward_signal = 0
+            E_factor = config.E_factor_night
+            T_factor = config.T_factor_night
+            positive_reward = 0
 
-                
+                  
         # 1 Energy
         reward_E = -E1 * E_factor
         
+        
         # 2 Temp
-        if 68<T_11<77:
-            reward_T1 = 1*work_flag
-        else:
-            reward_T1 = -(T_11-72)**2 * T_factor 
-            # reward_T1 = -((T_11)-72)**2 * T_factor
-            
-        if 68<T_21<77:
-            reward_T2 = 1*work_flag
-        else:
-            reward_T2 = -(T_21-72)**2 * T_factor 
-            # reward_T2 = -((T_21)-72)**2 * T_factor
-            
-        if 68<T_31<77:
-            reward_T3 = 1*work_flag
-        else:
-            reward_T3 = -(T_31-72)**2 * T_factor
-            # reward_T3 = -((T_31)-72)**2 * T_factor
-
-        if 68<T_41<77:
-            reward_T4 = 1*work_flag
-        else:
-            reward_T4 = -(T_41-72)**2 * T_factor
-            # reward_T4 = -((T_41)-72)**2 * T_factor
-
-        if 68<T_51<77:
-            reward_T5 = 1*work_flag
-        else:
-            reward_T5 = -(T_51-72)**2 * T_factor 
-            # reward_T5 = -((T_51)-72)**2 * T_factor
-
-        if 68<T_61<77:
-            reward_T6 = 1*work_flag
-        else:
-            reward_T6 = -(T_61-72)**2 * T_factor    
-            # reward_T6 = -((T_61)-72)**2 * T_factor
+        reward_T = []
         
-        # reward_T = (-np.sum((np.array(H_list)-72))**2) * T_factor
-        # reward_T = -((np.array(H_new_3)-72))**2 * T_factor
-        
-        # if 68<H_new_3<77:
-        #     reward_T = 1*work_flag
-        # else:
-        #     reward_T = (-np.abs(H_new_3-72)) * T_factor
-
-        # reward_T = np.mean([reward_T1,reward_T2,reward_T3,reward_T4,reward_T5,reward_T6])
-        # reward_T = np.sum([reward_T1,reward_T2,reward_T3,reward_T4,reward_T5,reward_T6])
-        reward_T = reward_T1+reward_T2+reward_T3+reward_T4+reward_T5+reward_T6
+        for T_i in [T_11,T_21,T_31,T_41,T_51,T_61]:
+            if 68<T_i<77:
+                reward_T.append(1*positive_reward)
+            else:
+                reward_T.append( -(T_i-72)**2 * T_factor )
+            
+        reward_T = np.mean(reward_T)
 
             
         
@@ -919,11 +860,11 @@ def callback_function_DQN(state_argument):
         
         change_action = np.array(current_action) ^ np.array(last_action)
         num_unstable = len(change_action[change_action==1])
-        reward_signal = -signal_factor * num_unstable
+        reward_signal = -config.signal_factor * num_unstable
         
         
         #
-        if signal_loss == True:
+        if config.signal_loss == True:
             reward_1 = reward_T + reward_E + reward_signal
         else:
             reward_1 = reward_T + reward_E
@@ -932,45 +873,62 @@ def callback_function_DQN(state_argument):
         EPLUS.episode_return = EPLUS.episode_return + reward_1
         
         
+        
+        
+        T_violation_legacy = 0
         if is_worktime:
             if T_mean > 77:
-                EPLUS.T_Violation.append(T_mean-77)
+                T_violation_legacy = T_mean-77
             elif T_mean < 68:
-                EPLUS.T_Violation.append(68-T_mean)
-            
-
+                T_violation_legacy = 68-T_mean
+        EPLUS.T_violation_legacy.append(T_violation_legacy)
+        
+        
+        
+        T_violation = []
+        if is_worktime:
+            for T_i in [T_11,T_21,T_31,T_41,T_51,T_61]:
+                if T_i > 77:
+                    T_violation.append(T_i-77)
+                elif T_i < 68:
+                    T_violation.append(68-T_i)
+                    
+        # print(T_violation)
+        T_violation = np.sum(T_violation)
+        EPLUS.T_violation.append(T_violation)
+        
 
 
 
 
         if H_new_1<0 or H_new_1>120:
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2001_handle, temp_f_to_c(72))
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2001_handle, temp_f_to_c(72))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2001_handle, temp_f_to_c(60))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2001_handle, temp_f_to_c(90))
             done = True
             print('Temp violation, reseting...')
         if H_new_2<0 or H_new_2>120:
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2002_handle, temp_f_to_c(72))
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2002_handle, temp_f_to_c(72))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2002_handle, temp_f_to_c(60))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2002_handle, temp_f_to_c(90))
             done = True
             print('Temp violation, reseting...')
         if H_new_3<0 or H_new_3>120:
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2003_handle, temp_f_to_c(72))
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2003_handle, temp_f_to_c(72))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2003_handle, temp_f_to_c(60))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2003_handle, temp_f_to_c(90))
             done = True
             print('Temp violation, reseting...')
         if H_new_4<0 or H_new_4>120:
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2004_handle, temp_f_to_c(72))
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2004_handle, temp_f_to_c(72))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2004_handle, temp_f_to_c(60))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2004_handle, temp_f_to_c(90))
             done = True
             print('Temp violation, reseting...')
         if H_new_5<0 or H_new_5>120:
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2005_handle, temp_f_to_c(72))
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2005_handle, temp_f_to_c(72))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2005_handle, temp_f_to_c(60))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2005_handle, temp_f_to_c(90))
             done = True
             print('Temp violation, reseting...')
         if H_new_6<0 or H_new_6>120:
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2006_handle, temp_f_to_c(72))
-            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2006_handle, temp_f_to_c(72))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_htg_2006_handle, temp_f_to_c(60))
+            api.exchange.set_actuator_value(state_argument, EPLUS.hvac_clg_2006_handle, temp_f_to_c(90))
             done = True
             print('Temp violation, reseting...')
 
@@ -999,8 +957,8 @@ def callback_function_DQN(state_argument):
         training
         
         '''
-        if replay_buffer.size() > minimal_size:
-            b_s, b_a, b_r, b_ns, b_d = replay_buffer.sample(batch_size)
+        if replay_buffer.size() > config.minimal_size:
+            b_s, b_a, b_r, b_ns, b_d = replay_buffer.sample(config.batch_size)
             transition_dict = {
                                 'states': b_s,
                                 'actions': b_a,
@@ -1120,7 +1078,7 @@ def callback_function_DQN(state_argument):
         # THERMAL_MAP_2D, Zone_Center_XY = ITRC_2.draw_map(EPLUS.T_map)
         
         
-        if EPLUS.RL_flag == True:
+        if EPLUS.Train == True:
             # print(f'{time_interval}   {T_31} | {70}   {reward_T} | {reward_E} | {reward_signal}   {action_1} | {action_map}')
             print('%d / %s   %.2f / 72   %.3f / %.3f / %.2f (T/E/S)'%(time_interval,dt,T_mean[-1],reward_T,reward_E,reward_signal))
 
@@ -1317,7 +1275,7 @@ def output_to_csv(file_path, data):
 
         
 ###############################################################################
-
+import yaml
 
 if __name__ == '__main__':
     os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -1328,63 +1286,29 @@ if __name__ == '__main__':
     delete_folder(folder_path)
     
 
-    '''
-    Import parameters from file  
-    '''    
-    parameters = read_parameters_from_txt('parameters.txt')
     
-    EPlus_file = parameters['EPlus_file']
-    osm_name_box = parameters['osm_name_box']
-    weather_data = parameters['weather_data']
-    HVAC_output = parameters['HVAC_output']
+    # Specify the file name you want to read parameters from
+    input_file = 'config.yaml'
     
-    timestep_per_hour = int(parameters['timestep_per_hour'])
-    begin_month = int(parameters['begin_month'])
-    begin_day_of_month = int(parameters['begin_day_of_month'])
-    end_month = int(parameters['end_month'])
-    end_day_of_month = int(parameters['end_day_of_month'])
-    save_idf = parameters['save_idf']
-    AirWall_Switch = parameters['AirWall_Switch']
-    Roof_Switch = parameters['Roof_Switch']
-    RL_flag = bool(parameters['RL_flag'])
+    # Read parameters from the YAML file
+    with open(input_file, 'r') as yaml_file:
+        config = yaml.safe_load(yaml_file)
     
-    state_dim = int(parameters['state_dim'])
-    action_dim = int(parameters['action_dim'])
+    # Now 'parameters' contains the data read from the YAML file
+    print(config)
+    
+    
+    
+    
+    # Define the Parameters class
+    class Parameters:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+                
+    config = Parameters(**config)
 
-    epochs = int(parameters['epochs'])
-    lr = float(parameters['lr'])
-    gamma = float(parameters['gamma'])
-    epsilon = int(parameters['epsilon'])
-    target_update = int(parameters['target_update'])
-    buffer_size = int(parameters['buffer_size'])
-    minimal_size = int(parameters['minimal_size'])
-    batch_size = int(parameters['batch_size'])
     
-    FPS = int(parameters['FPS'])
-    signal_loss = bool(parameters['signal_loss'])
-    signal_factor = float(parameters['signal_factor'])
-    T_factor_day = float(parameters['T_factor_day'])
-    E_factor_day = float(parameters['E_factor_day'])
-    T_factor_night = float(parameters['T_factor_night'])
-    E_factor_night = float(parameters['E_factor_night'])
-    F_bottom = int(parameters['F_bottom'])
-    F_top = int(parameters['F_top'])
-
-    if HVAC_output==True:
-        HVAC_file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
-        
-        if not os.path.exists(f'./HVAC_data/{HVAC_file_name}.csv'): 
-            columns = ['date', 'time', 'outdoor temperature', 
-                      'indoor temperature 1', 'indoor temperature 2','indoor temperature 3', 
-                      'indoor temperature 4', 'indoor temperature 5', 'indoor temperature 6',
-                      'setpoint 1', 'setpoint 2', 'setpoint 3',
-                      'setpoint 4', 'setpoint 5', 'setpoint 6']
-            
-            df = pd.DataFrame(columns=columns)
-    
-            # Save the updated DataFrame back to the CSV file
-            df.to_csv(f'./HVAC_data/{HVAC_file_name}.csv', sep=',', index=False)
-            print("CSV file generated successfully.")
 
 
     # Use OpenStudio to create a Model
@@ -1394,7 +1318,7 @@ if __name__ == '__main__':
     # Run EnergyPlus in API mode
     # insert the repo build tree or install path into the search Path, then import the EnergyPlus API
     import sys
-    sys.path.insert(0, EPlus_file)
+    sys.path.insert(0, config.EPlus_file)
 
     # from pyenergyplus import api
     from pyenergyplus.api import EnergyPlusAPI
@@ -1463,9 +1387,9 @@ if __name__ == '__main__':
     '''
     EPLUS = Data_Bank()
     EPLUS.FPS = 10000
-    EPLUS.RL_flag = False
+    EPLUS.Train = False
     
-    filename_to_run = save_idf
+    filename_to_run = config.save_idf
     
     
     # 
@@ -1477,9 +1401,9 @@ if __name__ == '__main__':
        
     api.runtime.run_energyplus(E_state,
         [
-            '-w', weather_data,
+            '-w', config.weather_data,
             '-d', 'out/',
-            filename_to_run
+            config.save_idf
         ]
     )
     
@@ -1508,10 +1432,15 @@ if __name__ == '__main__':
     Hyperparameters for DQN
     
     '''
-    
+
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    agent = DQN(state_dim, action_dim, lr, gamma, epsilon, target_update, device)
-    replay_buffer = ReplayBuffer(buffer_size)
+    agent = DQN(config.state_dim, 
+                config.action_dim, 
+                config.lr, 
+                config.gamma, 
+                config.epsilon, 
+                config.target_update, device)
+    replay_buffer = ReplayBuffer(config.buffer_size)
     
     # agent.q_net.load_state_dict(torch.load('./weights/Enet_last_19.pth'))
     
@@ -1520,17 +1449,19 @@ if __name__ == '__main__':
     DQN
     '''
     
-    Benchmark = np.zeros((epochs,30), dtype=object)
+    # config.epochs = 1
+    
+    Benchmark = np.zeros((config.epochs,30), dtype=object)
     
     
-    for epoch in range(epochs):
+    for epoch in range(config.epochs):
         time_start = time.time()
         print('\n Training iteration: ', epoch)
 
     
         EPLUS = Data_Bank()
-        EPLUS.FPS = FPS
-        EPLUS.RL_flag = RL_flag
+        EPLUS.FPS = config.FPS
+        EPLUS.Train = config.Train
     
     
         # 
@@ -1543,9 +1474,9 @@ if __name__ == '__main__':
            
         api.runtime.run_energyplus(E_state,
             [
-                '-w', weather_data,
+                '-w', config.weather_data,
                 '-d', 'out/',
-                filename_to_run
+                config.save_idf
             ]
         )
         
@@ -1553,7 +1484,7 @@ if __name__ == '__main__':
         api.state_manager.reset_state(E_state)
         api.state_manager.delete_state(E_state)
     
-        torch.save(agent.target_q_net.state_dict(), f'./weights/Enet_last_{epoch}.pth')
+        torch.save(agent.target_q_net.state_dict(), f'./weights/Enet_{epoch}.pth')
     
         E_HVAC_all_DQN = copy.deepcopy(EPLUS.E_HVAC_all)
         
@@ -1579,13 +1510,23 @@ if __name__ == '__main__':
         work_time_length = EPLUS.work_time.count(1)
         
         
-        # work_time_length/len(E_HVAC_all_RBC)
         
-        T_violation = len(EPLUS.T_Violation)/ len(EPLUS.x)
-        T_violation_offset = np.mean(EPLUS.T_Violation)
+        T_violation_legacy = np.array(EPLUS.T_violation_legacy)
+        T_violation_legacy_ratio = len(T_violation_legacy[T_violation_legacy>0])/ len(EPLUS.x)
+        # T_violation_offset = np.mean(EPLUS.T_violation_legacy)
+        
+        
+        # work_time_length/len(E_HVAC_all_RBC)
+        T_violation = np.array(EPLUS.T_violation) * EPLUS.work_time
+        T_violation_len = len(T_violation[T_violation>0])
+        T_violation_ratio = T_violation_len / len(EPLUS.x)
+        T_violation_offset = np.mean(T_violation)
+        
+        
+        
         
         print(f'Energy saving ratio: {E_save}')
-        print(f'Temperature violation: {T_violation}')
+        print(f'Temperature violation: {T_violation_legacy_ratio}')
         print(f'Temperature violation offset: {T_violation_offset}')
         
         
@@ -1594,9 +1535,9 @@ if __name__ == '__main__':
         Benchmark[0, 1] = E_HVAC_all_RBC
         Benchmark[epoch, 2] = E_HVAC_all_DQN
         Benchmark[epoch, 3] = E_save
-        Benchmark[epoch, 4] = T_violation
+        Benchmark[epoch, 4] = T_violation_ratio
         Benchmark[epoch, 5] = T_violation_offset
-        Benchmark[epoch, 6] = EPLUS.T_Violation
+        Benchmark[epoch, 6] = EPLUS.T_violation
         Benchmark[epoch, 7] = EPLUS.episode_reward
         Benchmark[epoch, 8] = EPLUS.action_list
         Benchmark[epoch, 9] = time_round
@@ -1626,7 +1567,8 @@ if __name__ == '__main__':
         
         
         
-    
+    torch.save(agent.target_q_net.state_dict(), f'./weights/last.pth')
+
     
     
     

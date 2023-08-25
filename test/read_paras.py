@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
 """
 Created on Fri Jun  9 12:20:00 2023
@@ -21,14 +23,175 @@ import matplotlib.pyplot as plt
 # from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
+import yaml
+
+# Define the parameters
+config = {
+    'openstudio_path': './openstudioapplication-1.6.0/',
+    'EPlus_file': './openstudioapplication-1.6.0/EnergyPlus',
+    'osm_name_box': './building_model/ITRC_2nd_6zone_OPEN_3.61.osm',
+    'weather_data': './weather_data/USA_SC_Greenville-Spartanburg.Intl.AP.723120_TMY3.epw',
+    'iddfile': 'Energy+.idd',
+    'save_idf': 'run.idf',
+    'weight_file': './weights/last.pth',
+    
+    'HVAC_output': True,
+    'reset_dataframe': False,
+    'Train': True,
+    'signal_loss': False,
+    'AirWall_Switch': 'on',
+    'Roof_Switch': 'off',
+    
+    'timestep_per_hour': 12,
+    'begin_month': 1,
+    'begin_day_of_month': 1,
+    'end_month': 12,
+    'end_day_of_month': 31,
+
+    
+    'state_dim': 14,
+    'action_dim': 64,
+    'epochs': 20,
+    'lr': 0.001,
+    'gamma': 0.9,
+    'epsilon': 0,
+    
+    'target_update': 100,
+    'buffer_size': 10000,
+    'minimal_size': 200,
+    'batch_size': 128,
+    'FPS': 5000,
+    
+    'positive_reward': 0,
+    'signal_factor': 0.1,
+    'T_factor_day': 0.01,
+    'E_factor_day': 1e-5,
+    'T_factor_night': 0,
+    'E_factor_night': 1e-5,
+    
+    'F_bottom': 60,
+    'F_top': 90
+}
+
+
+output_file = 'config.yaml'
+
+# Save parameters to a YAML file
+with open(output_file, 'w') as yaml_file:
+    yaml.dump(config, yaml_file, default_flow_style=False, sort_keys=False)
+
+print(f'Parameters saved to {output_file}')
+
+
+
+class Parameters:
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+            
+config = Parameters(**config)
+
+
+
+
+import datetime
+import pandas as pd
+
+ts = datetime.datetime.now()
+ts = datetime.datetime(ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second)
+
+History = {
+    'time_line': [ts],
+    'year': [ts.year],
+    'month': [ts.month],
+    'day': [ts.day],
+    'hour': [ts.hour],
+    'minute': [ts.minute],
+    
+    'weekday': [ts.weekday()+1],
+    'isweekday': [0],
+    'isweekend': [0],
+    'work_time': [0],
+
+    'y_outdoor': [72],
+
+    'y_zone_temp_2001': [72],
+    'y_zone_temp_2002': [72],
+    'y_zone_temp_2003': [72],
+    'y_zone_temp_2004': [72],
+    'y_zone_temp_2005': [72],
+    'y_zone_temp_2006': [72],
+    
+    'hvac_2001': [0], 
+    'hvac_2002': [0], 
+    'hvac_2003': [0], 
+    'hvac_2004': [0], 
+    'hvac_2005': [0], 
+    'hvac_2006': [0], 
+    
+    # 'hvac_htg_2001': [72],
+    # 'hvac_clg_2001': [72],
+    # 'hvac_htg_2002': [72],
+    # 'hvac_clg_2002': [72],
+    # 'hvac_htg_2003': [72],
+    # 'hvac_clg_2003': [72],
+    # 'hvac_htg_2004': [72],
+    # 'hvac_clg_2004': [72],
+    # 'hvac_htg_2005': [72],
+    # 'hvac_clg_2005': [72],
+    # 'hvac_htg_2006': [72],
+    # 'hvac_clg_2006': [72], 
+    
+    'action_list': [0],
+    'reward': [0],
+    
+    'E_Facility': [0],
+    'E_HVAC': [0],
+    'E_Heating': [0],
+    'E_Cooling': [0],
+    
+    'T_violation': [0],
+    'T_diff': [0],
+    'T_mean': [0],
+    'T_var': [0],
+    
+    'sun_is_up': [0],
+    'is_raining': [0],
+    'outdoor_humidity': [0],
+    'wind_speed': [0],
+    'diffuse_solar': [0],
+        
+    'y_humd': [0],
+    'y_wind': [0],
+    'y_solar': [0]
+
+}
+
+
+
+if not os.path.exists('./data/History.csv') or config.reset_dataframe == True:
+    # Convert the dictionary to a DataFrame
+    df = pd.DataFrame(History)
+    
+    # Save DataFrame to a CSV file
+    df.to_csv('./data/History.csv', index=False)
+    
+    # Save DataFrame to an Excel file
+    df.to_excel('./data/History.xlsx', index=False)
+    
+
+
+
+
+
+
 
 # Specify the folder paths you want to create
 folder_paths = [
     "Benchmark_data",
-    "HVAC_data",
+    "data",
     "weights",
     "plot"
-    # Add more folder paths if needed
 ]
 
 for folder_path in folder_paths:
@@ -45,99 +208,9 @@ def save_parameters_to_txt(parameters, file_path):
         for key, value in parameters.items():
             file.write(f'{key}: {value}\n')
             print(f"{key}: {value}")
-    # print(f'Parameters saved to {file_path}')
-
-
-openstudio_path = './openstudioapplication-1.6.0/'
-EPlus_file = './openstudioapplication-1.6.0/EnergyPlus'
-osm_name_box = './building_model/ITRC_2nd_6zone_OPEN_3.61.osm'
-weather_data = './weather_data/USA_SC_Greenville-Spartanburg.Intl.AP.723120_TMY3.epw'
-iddfile = 'Energy+.idd'
-save_idf = 'run.idf'
-HVAC_output = False
-
-timestep_per_hour = 12
-begin_month = 1
-begin_day_of_month =1
-end_month = 12
-end_day_of_month = 31
-AirWall_Switch = 'on'
-Roof_Switch = 'off'
-RL_flag = False
+    print(f'Parameters saved to {file_path}')
 
     
-state_dim = 15
-action_dim = 2**6
-    
-epochs = 10
-lr = 1e-3
-gamma = 0.9
-epsilon = 0
-target_update = 100
-buffer_size = 10000
-minimal_size = 200
-batch_size = 128
-
-FPS = 10000
-signal_loss = False
-signal_factor = 0.1
-T_factor_day = 0.01 *1
-E_factor_day = 1e-6
-T_factor_night = 0
-E_factor_night = 1e-6 *1
-F_bottom = 0
-F_top = 120
-
-    
-parameters = {
-    'osm_name_box': osm_name_box,
-    'weather_data': weather_data, 
-    'EPlus_file' : EPlus_file,
-    'save_idf' : save_idf,
-    'HVAC_output' : HVAC_output,
-
-    'timestep_per_hour': timestep_per_hour,
-    'begin_month': begin_month,
-    'begin_day_of_month': begin_day_of_month,
-    'end_month' : end_month,
-    'end_day_of_month' : end_day_of_month,
-    'AirWall_Switch' : AirWall_Switch,
-    'Roof_Switch' : Roof_Switch,
-    'RL_flag' : RL_flag,
-    
-    'state_dim': state_dim,
-    'action_dim': action_dim,
-    
-    'epochs' : epochs,
-    'lr' : lr,
-    'gamma' : gamma,
-    'epsilon' : epsilon,
-    'target_update' : target_update,
-    'buffer_size' : buffer_size,
-    'minimal_size' : minimal_size,
-    'batch_size' : batch_size,
-    
-    'FPS' : FPS,
-    'signal_loss' : signal_loss,
-    'signal_factor' : signal_factor,
-    'T_factor_day' : T_factor_day,
-    'E_factor_day' : E_factor_day,
-    'T_factor_night' : T_factor_night,
-    'E_factor_night' : E_factor_night,
-    'F_bottom' : F_bottom,
-    'F_top' : F_top
-    
-}
-
-
-
-save_parameters_to_txt(parameters, 'parameters.txt')
-print('\n save parameters successful...\n')
-print(parameters)
-
-
-
-
 
 
 
@@ -153,12 +226,14 @@ from eppy.modeleditor import IDF
 # # hvac_cool_setpoint.Value_Until_Time_1
 
 # # idf1.save()
-
 # Building_Surfaces = idf1.idfobjects['BuildingSurface:Detailed']
-
 # len(Building_Surfaces)
 
 import random
+
+iddfile = config.iddfile
+F_top = config.F_top
+F_bottom = config.F_bottom
 
 class Building(object):
     
@@ -170,7 +245,8 @@ class Building(object):
     '''
 
     def __init__(self, filename_to_run):
-        # iddfile = iddfile
+
+        
         IDF.setiddname(iddfile)    
         idf1 = IDF(filename_to_run)
         # print(idf1.idfobjects['BUILDING']) 
@@ -329,7 +405,6 @@ class Building(object):
 # temp['Thermal Zone 4'] = 25
 # temp['Thermal Zone 5'] = 30
 # temp['Thermal Zone 6'] = 35
-# temp['Thermal Zone 7'] = 40
 
 
 # map_2D = ITRC_2.draw_map(temp)
@@ -353,7 +428,7 @@ define date, save model
 # osm_name_box = 'ITRC_2nd_6zone_OPEN.osm'
 
 current_dir = os.getcwd()
-osm_path = os.path.join(current_dir,osm_name_box)
+osm_path = os.path.join(current_dir,config.osm_name_box)
 osm_path = openstudio.path(osm_path) # I guess this is how it wants the path for the translator
 print(osm_path)
 
@@ -474,7 +549,7 @@ for var in ["Zone Air Relative Humidity",
 
 # Set timestep
 timestep = m.getTimestep()
-timestep.setNumberOfTimestepsPerHour(timestep_per_hour)
+timestep.setNumberOfTimestepsPerHour(config.timestep_per_hour)
 
 # Check the heating thermostat schedule
 # z = m.getThermalZones()[2]
@@ -488,30 +563,23 @@ timestep.setNumberOfTimestepsPerHour(timestep_per_hour)
 r = m.getRunPeriod()
 # print(r)
 
-r.setBeginMonth(begin_month)
-r.setBeginDayOfMonth(begin_day_of_month)
+r.setBeginMonth(config.begin_month)
+r.setBeginDayOfMonth(config.begin_day_of_month)
 
-r.setEndMonth(end_month)
-r.setEndDayOfMonth(end_day_of_month)
+r.setEndMonth(config.end_month)
+r.setEndDayOfMonth(config.end_day_of_month)
 
 
 ft = openstudio.energyplus.ForwardTranslator()
 w = ft.translateModel(m)
-w.save(openstudio.path(save_idf), True)
+w.save(openstudio.path(config.save_idf), True)
 
     
 
-
-
-filename_to_run = save_idf
-
+filename_to_run = config.save_idf
 IDF.setiddname(iddfile)
-
-
 IDF.getiddname()
-
 idf1 = IDF(filename_to_run)
-
 idf1.printidf()
 # print(idf1.idfobjects['BUILDING']) # put the name of the object you'd like to look at in brackets
 
@@ -521,20 +589,21 @@ idf1.printidf()
 Building Model
 '''
 
-filename_to_run = save_idf
+filename_to_run = config.save_idf
 
-ITRC_2 = Building(save_idf)
+ITRC_2 = Building(config.save_idf)
 ITRC_2.idf.idfobjects['BuildingSurface:Detailed']
-ITRC_2.AirWall_Switch(AirWall_Switch)
-ITRC_2.Roof_Switch(Roof_Switch)
-ITRC_2.idf.saveas(save_idf)
+ITRC_2.AirWall_Switch(config.AirWall_Switch)
+ITRC_2.Roof_Switch(config.Roof_Switch)
+ITRC_2.idf.saveas(config.save_idf)
 
 THERMAL_MAP_2D = ITRC_2.init_map_2D()
 building_floor = ITRC_2.building_floor
 # plt.imshow(THERMAL_MAP_2D)
 
+print('save to:', config.save_idf)
 
-print('save to:', save_idf)
+
 
 
 
