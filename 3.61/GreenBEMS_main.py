@@ -250,6 +250,7 @@ if __name__ == '__main__':
         
         
     
+    
     # Specify the file name you want to read parameters from
     input_file = 'config.yaml'
     
@@ -334,13 +335,13 @@ if __name__ == '__main__':
     engine = create_engine("mysql+pymysql://{user}:{passw}@{host}/{schema}".format(**c))
     print(f"{engine=}")
 
-    Status = namedtuple("Status", "ts building zone vav occupied temperature")
+    Status = namedtuple("Status", "ts building zone vav occupied temperature outside flowrate")
     query = """
     SELECT *
       FROM status
       WHERE building = '10.21'
         AND zone = 'L1 NORTH'
-        AND (building, zone, ts) IN ( SELECT building, zone, MAX(ts) FROM status )
+        AND (building, zone, ts) IN ( SELECT building, zone, vav, MAX(ts) FROM status Group BY building, zone, vav)
     """
     results = [ ]
     with engine.connect() as con:
