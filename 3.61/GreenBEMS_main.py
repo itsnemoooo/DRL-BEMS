@@ -42,6 +42,7 @@ import pytoml
 from sqlalchemy import create_engine, text
 
 import yaml
+import pickle
 
 
 ###############################################################################
@@ -303,12 +304,15 @@ if __name__ == '__main__':
                 config.gamma, 
                 config.epsilon, 
                 config.target_update, device)
-    replay_buffer = ReplayBuffer(config.buffer_size)
     
     if os.path.exists(config.weight_file):
         agent.q_net.load_state_dict(torch.load(config.weight_file))
 
-
+    if os.path.exists(config.replay_buffer):
+        with open(config.replay_buffer, 'rb') as file:
+            replay_buffer = pickle.load(file)
+    else:
+        replay_buffer = ReplayBuffer(config.buffer_size)
     
 
     '''
@@ -341,7 +345,7 @@ if __name__ == '__main__':
       FROM status
       WHERE building = '10.21'
         AND zone = 'L1 NORTH'
-        AND (building, zone, ts) IN ( SELECT building, zone, vav, MAX(ts) FROM status Group BY building, zone, vav)
+        AND (building, zone, vav, ts) IN ( SELECT building, zone, vav, MAX(ts) FROM status Group BY building, zone, vav)
     """
     results = [ ]
     with engine.connect() as con:
@@ -351,28 +355,62 @@ if __name__ == '__main__':
             results.append(Status(*row))
             
     print(results)
+    
+    
+    
+    
+    # query = """
+    #     WITH latest AS (
+    #   SELECT building, zone, vav, MAX(ts) ts
+    #     FROM status
+    #     GROUP BY building, zone, vav
+    # )
+    # SELECT *
+    #   FROM status
+    #   WHERE building = '10.21'
+    #     AND zone = 'L1 NORTH'
+    #     AND (building, zone, vav, ts) IN (
+    #       SELECT S.building, S.zone, S.vav, MAX(S.ts)
+    #         FROM status S, latest L
+    #         WHERE S.building = L.building
+    #           AND S.zone = L.zone
+    #           AND S.vav = L.vav
+    #           AND S.ts != L.ts
+    #         GROUP BY S.building, S.zone, S.vav
+    
+    #     )
+    #     """
+    
+    # results_tm1 = [ ]
+    # with engine.connect() as con:
+    #     result = con.execute(text(query))
+    #     # for ts,building,zone,vav,occupied,temperature in result:
+    #     for row in result:
+    #         results_tm1.append(Status(*row))
             
-            
+    # print(results_tm1)
+        
     # class DataPoint:
     #     def __init__(self, ts, temperature, occupied):
     #         self.ts = ts
     #         self.temperature = temperature
     #         self.occupied = occupied
+    #         self.outside_temperature = 75
 
     # results = [
-    #     DataPoint(datetime.datetime.now(), 72, 1),
-    #     DataPoint(datetime.datetime.now(), 70, 0),
-    #     DataPoint(datetime.datetime.now(), 68, 1),
-    #     DataPoint(datetime.datetime.now(), 65, 1),
-    #     DataPoint(datetime.datetime.now(), 73, 1),
-    #     DataPoint(datetime.datetime.now(), 68, 0)
+    #     DataPoint(datetime.datetime.now(), 50, 1),
+    #     DataPoint(datetime.datetime.now(), 80, 0),
+    #     DataPoint(datetime.datetime.now(), 90, 1),
+    #     DataPoint(datetime.datetime.now(), 30, 1),
+    #     DataPoint(datetime.datetime.now(), 60, 1),
+    #     DataPoint(datetime.datetime.now(), 75, 0)
     # ]
                     
     
     
     
-    
             
+    
 
     # print(results)
 
@@ -388,7 +426,8 @@ if __name__ == '__main__':
     
     '''Temperature'''
 
-    oa_temp = 75
+    # oa_temp = 75
+    oa_temp = results[0].outside_temperature
     
     zone_temp_2001 = results[0].temperature
     zone_temp_2002 = results[1].temperature
@@ -482,6 +521,11 @@ if __name__ == '__main__':
     df.loc[new_row, 'work_time'] = is_worktime
 
     
+    # print('last data: ', df.iloc[-2])
+
+    # print('current data: ', df.iloc[-1])
+    
+    
     
     ''' 
     DQN 
@@ -495,6 +539,7 @@ if __name__ == '__main__':
         if time_interval == 1:
             df.loc[1, 'reward'] = 0
             df.loc[1, 'action_list'] = 0
+    
     
         '''
         Replay
@@ -570,17 +615,18 @@ if __name__ == '__main__':
         
         
         
-        df.loc[new_row, 'hvac_2001'] = hvac_2001_new
-        df.loc[new_row, 'hvac_2002'] = hvac_2002_new
-        df.loc[new_row, 'hvac_2003'] = hvac_2003_new
-        df.loc[new_row, 'hvac_2004'] = hvac_2004_new
-        df.loc[new_row, 'hvac_2005'] = hvac_2005_new
-        df.loc[new_row, 'hvac_2006'] = hvac_2006_new
+        # df.loc[new_row, 'hvac_2001'] = hvac_2001_new
+        # df.loc[new_row, 'hvac_2002'] = hvac_2002_new
+        # df.loc[new_row, 'hvac_2003'] = hvac_2003_new
+        # df.loc[new_row, 'hvac_2004'] = hvac_2004_new
+        # df.loc[new_row, 'hvac_2005'] = hvac_2005_new
+        # df.loc[new_row, 'hvac_2006'] = hvac_2006_new
         
 
         df.loc[new_row, 'action_list'] = action_1
         
         
+        print("Action for next step: ", action_map)
         
         
         
@@ -592,7 +638,7 @@ if __name__ == '__main__':
 
         E_HVAC = []
         for T_i in [T_11,T_21,T_31,T_41,T_51,T_61]:
-            temperature_difference = T_i - O0  # °C
+            # temperature_difference = T_i - O0  # °C
             
             if T_i > O0:
                 temperature_difference = T_i - O0  # °C
@@ -694,6 +740,8 @@ if __name__ == '__main__':
         # add to experience
         replay_buffer.add(state_0, action_0, reward_1, state_1, done)
         
+        with open(config.replay_buffer, 'wb') as file:
+            pickle.dump(replay_buffer, file)
         
 
         '''
@@ -712,14 +760,26 @@ if __name__ == '__main__':
             agent.update(transition_dict)
 
 
+
+
+
+
+
+
     if config.HVAC_output == True:
         # Save DataFrame to a CSV file
         df.to_csv('./data/History.csv', index=False)
         df.to_csv('./data/History_backup.csv', index=False)
         
         # Save DataFrame to an Excel file
-        df.to_excel('./data/History.xlsx', index=False)
-        df.to_excel('./data/History_backup.xlsx', index=False)
+        # df.to_excel('./data/History.xlsx', index=False)
+        # df.to_excel('./data/History_backup.xlsx', index=False)
+
+
+        
+
+
+
 
         
 

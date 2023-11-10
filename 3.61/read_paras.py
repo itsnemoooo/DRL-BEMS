@@ -29,11 +29,12 @@ import yaml
 config = {
     'openstudio_path': './openstudioapplication-1.6.0/',
     'EPlus_file': './openstudioapplication-1.6.0/EnergyPlus',
-    'osm_name_box': './building_model/ITRC_2nd_6zone_OPEN_3.61.osm',
+    'osm_name_box': './building_model/ITRC_2nd_6zone_OPEN_3.60.osm',
     'weather_data': './weather_data/USA_SC_Greenville-Spartanburg.Intl.AP.723120_TMY3.epw',
     'iddfile': 'Energy+.idd',
     'save_idf': 'run.idf',
     'weight_file': './weights/last.pth',
+    'replay_buffer': 'replay_buffer.pkl',
     
     'HVAC_output': True,
     'reset_dataframe': False,
@@ -51,13 +52,13 @@ config = {
     
     'state_dim': 14,
     'action_dim': 64,
-    'epochs': 20,
+    'epochs': 10,
     'lr': 0.001,
     'gamma': 0.9,
     'epsilon': 0,
     
-    'target_update': 20,
-    'buffer_size': 10000,
+    'target_update': 10,
+    'buffer_size': 1000,
     'minimal_size': 200,
     'batch_size': 128,
     'FPS': 1000,
@@ -210,11 +211,34 @@ if not os.path.exists('./data/History.csv') or config.reset_dataframe == True:
     df.to_csv('./data/History.csv', index=False)
     
     # Save DataFrame to an Excel file
-    df.to_excel('./data/History.xlsx', index=False)
+    # df.to_excel('./data/History.xlsx', index=False)
     
 
 
 
+import pickle
+import random
+from collections import deque
+
+
+class ReplayBuffer:
+    def __init__(self, capacity):
+        self.buffer = deque(maxlen=capacity)  # FIFO
+
+    def add(self, state, action, reward, next_state, done):  # add data to buffer
+        self.buffer.append((state, action, reward, next_state, done))
+
+    def sample(self, batch_size):  # sample from buffer with batch_size
+        transitions = random.sample(self.buffer, batch_size)
+        state, action, reward, next_state, done = zip(*transitions)
+        return np.array(state), action, reward, np.array(next_state), done
+
+    def size(self):
+        return len(self.buffer)
+
+replay_buffer = ReplayBuffer(config.buffer_size)
+with open(config.replay_buffer, 'wb') as file:
+    pickle.dump(replay_buffer, file)
 
 
 

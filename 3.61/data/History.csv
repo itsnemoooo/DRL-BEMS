@@ -1,0 +1,2 @@
+time_line,year,month,day,hour,minute,weekday,isweekday,isweekend,work_time,y_outdoor,y_zone_temp_2001,y_zone_temp_2002,y_zone_temp_2003,y_zone_temp_2004,y_zone_temp_2005,y_zone_temp_2006,hvac_2001,hvac_2002,hvac_2003,hvac_2004,hvac_2005,hvac_2006,action_list,reward,E_Facility,E_HVAC,E_Heating,E_Cooling,T_violation,T_diff,T_mean,T_var,sun_is_up,is_raining,outdoor_humidity,wind_speed,diffuse_solar,y_humd,y_wind,y_solar
+2023-11-02 23:13:55,2023,11,2,23,13,4,0,0,0,72,72,72,72,72,72,72,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
