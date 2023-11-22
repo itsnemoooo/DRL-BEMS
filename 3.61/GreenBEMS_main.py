@@ -615,6 +615,7 @@ if __name__ == '__main__':
         
         
         
+        
         # df.loc[new_row, 'hvac_2001'] = hvac_2001_new
         # df.loc[new_row, 'hvac_2002'] = hvac_2002_new
         # df.loc[new_row, 'hvac_2003'] = hvac_2003_new
@@ -637,17 +638,23 @@ if __name__ == '__main__':
         specific_heat_capacity_air = 1005  # J/kg°C (at constant pressure)
 
         E_HVAC = []
-        for T_i in [T_11,T_21,T_31,T_41,T_51,T_61]:
+        
+        T_list = [T_11,T_21,T_31,T_41,T_51,T_61]
+        
+        for i in range(len(T_list)):
             # temperature_difference = T_i - O0  # °C
             
-            if T_i > O0:
-                temperature_difference = T_i - O0  # °C
-                cooling_energy = airflow_rate * specific_heat_capacity_air * temperature_difference
-                E_HVAC.append(cooling_energy)
+            '''
+            building has no cooling coil
+            '''
+            # if T_i > O0:
+            #     temperature_difference = T_i - O0  # °C
+            #     cooling_energy = airflow_rate * specific_heat_capacity_air * temperature_difference 
+            #     E_HVAC.append(cooling_energy)
                 
-            if T_i < O0:
-                temperature_difference = O0 - T_i  # °C
-                heating_energy = airflow_rate * specific_heat_capacity_air * temperature_difference
+            if T_list[i] < 71:
+                temperature_difference = 71 - T_list[i]  # °C
+                heating_energy = airflow_rate * specific_heat_capacity_air * temperature_difference * action_map[i]
                 E_HVAC.append(heating_energy*3)
                 
                 
@@ -656,7 +663,7 @@ if __name__ == '__main__':
         
 
         ''' 
-        reward define 
+        reward define  
         
         '''
         if is_worktime:
