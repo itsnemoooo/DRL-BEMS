@@ -3,7 +3,7 @@
 
 <br>
 
-<img src="../images/BEMS/HVAC_2.0.gif" alt="Training process monitoring" width='100%'>
+<img src="./plot/HVAC_2.0.gif" alt="Training process monitoring" width='100%'>
 
 
 <br>
@@ -36,7 +36,7 @@ we present a DRL-based HVAC control method to optimize building energy consumpti
 The global energy outlook is witnessing a continuous surge in the demand for energy resources, alongside a growing concern for environmental sustainability. With the world's population reaching 8 billion people, our consumption of energy has reached unprecedented levels. The excessive use of energy sources like coal, oil, and natural gas has resulted in the release of harmful greenhouse gases, contributing significantly to the critical issue of global warming. These emissions not only deplete our planet's limited resources but also exacerbate conflicts related to resource availability. This highlights the importance of more informed energy consumption, worldwide.
 
 <br>
-<img src="../images/BEMS/commercial_hvac_all.jpg" width="80%">
+<img src="./plot/commercial_hvac_all.jpg" width="80%">
 
 
 <br>
@@ -46,7 +46,7 @@ The global energy outlook is witnessing a continuous surge in the demand for ene
 Despite the popularity of open-plan offices in commercial buildings, limited research has been conducted to address the importance of energy optimization in these types of spaces. For instance, VAV units in such offices often operate independently, without considering the interconnectivity of these spaces, which can result in a disparity in heating and cooling, with areas located close to vents receiving more ventilation-based heating/cooling, while spaces near windows receive more heat from solar radiation.
 
 <br>
-<img src="../images/BEMS/multi_VAV_2.jpg" width="80%">
+<img src="./plot/multi_VAV_2.jpg" width="80%">
 
 <br>
 <br>
@@ -70,7 +70,7 @@ Despite the popularity of open-plan offices in commercial buildings, limited res
 
 <br>
 
-<img src="../images/BEMS/framework_2.jpg" width="80%">
+<img src="./plot/framework_2.jpg" width="80%">
 
 
 <br>
