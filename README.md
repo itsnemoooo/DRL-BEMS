@@ -1,6 +1,10 @@
 # Building Energy Management System for Multi-VAV HVAC in Open Offices
 # 2023-10-31
 
+<br>
+
+<img src="../images/BEMS/HVAC_2.0.gif" alt="Training process monitoring" width='100%'>
+
 
 <br>
 
@@ -77,9 +81,6 @@ Despite the popularity of open-plan offices in commercial buildings, limited res
 
 For the demonstration of this project, please see <a href="https://github.com/AIS-Clemson/DRL-BEMS">this link</a>
 
-<br>
-
-<img src="../images/BEMS/HVAC_2.0.gif" alt="Training process monitoring" width='100%'>
 
 
 <br>
